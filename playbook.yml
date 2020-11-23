@@ -1,0 +1,57 @@
+# playbook.yml
+---
+- hosts: "{{ target }}"
+
+  tasks:
+  - name: install requirements
+    yum:
+      name:
+        - gcc
+        - make
+        - python3
+        - python3-pip
+        - python3-devel
+        - python3-setuptools
+        - java-11-openjdk-devel
+      state: present
+  - name: install extra packages
+    yum:
+      name: "{{ extra_packages }}"
+  - name: Create destination dir if not exists
+    file:
+      path: "{{ project_root }}"
+      state: directory
+      recurse: yes
+  - name: Copy script
+    copy: src="{{ item.src }}" mode="{{ item.mode }}"
+      dest="{{ project_root }}"
+      owner=root
+      group=root
+    with_items:
+      - { src: 'monitor.py', mode: 755 }
+      - { src: 'run.sh', mode: 755 }
+      - { src: 'Pipfile', mode: 644 }
+      - { src: 'Pipfile.lock', mode: 644 }
+  - name: Install virtualenv
+    environment:
+      LANG: "en_GB.UTF-8"
+    command: "pip3 install -U virtualenv pipenv"
+    args:
+      chdir: "{{ project_root }}"
+  - name: Initiate virtualenv
+    environment:
+      LANG: "en_GB.UTF-8"
+    command: "virtualenv .venv"
+    args:
+      chdir: "{{ project_root }}"
+  - name: Install pipenv packages
+    environment:
+      LANG: "en_GB.UTF-8"
+    command: "pipenv --bare install"
+    args:
+      chdir: "{{ project_root }}"
+  - name: Run monitor script every 15 minutes
+    cron:
+      name: "System Utilization"
+      minute: "*/15"
+      job: "{{ project_root }}/run.sh > /dev/null"

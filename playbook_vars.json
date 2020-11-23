@@ -1,0 +1,7 @@
+{
+    "target": "centos",
+    "project_root": "/opt/system_utilization",
+    "extra_packages": [
+        "wget"
+    ]
+}
